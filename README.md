@@ -2,6 +2,6 @@
 
 Member1:
 
-Member2:
+Member2: Jada Allen
 
 Member3:
