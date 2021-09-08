@@ -1,6 +1,6 @@
 # 11249group13
 
-Member1: Bhaskar Mishra
+Member1: 
 
 Member2: Jada Allen.
 
