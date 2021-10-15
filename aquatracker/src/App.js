@@ -17,6 +17,8 @@ function App() {
         >
           Learn React
         </a>
+      <p>This is a test for editing the REACT file... Dave Rowe was here :)</p>
+    <p>Looking for Jada and Bhaskar ;)</p>
       </header>
     </div>
   );
