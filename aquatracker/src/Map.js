@@ -1,6 +1,11 @@
 import React from 'react';
 import { Map, Marker, GoogleApiWrapper, Polyline } from 'google-maps-react';
 import red from './red.png'
+import yellow from './yellow.png'
+import blue from './blue.png'
+import green from './green.png'
+import lblue from './lblue.png'
+import dgreen from './dgreen.png'
 
 const axios = require('axios')
 
@@ -23,6 +28,14 @@ const containerStyle = {
     borderStyle: 'solid',
     borderWidth: '5px',
     borderColor: 'black',
+}
+
+const markerImages = {
+    'ST': blue,
+    'SP': dgreen,
+    'ES': red,
+    'LK': yellow,
+    'OC': red
 }
 
 // Copied from https://stackoverflow.com/questions/6048975/google-maps-v3-how-to-calculate-the-zoom-level-for-a-given-bounds
@@ -75,7 +88,25 @@ export class MapContainer extends React.Component {
                 lat: 28.0571376,
                 lng: -83.7662318
             },
-            sites: []
+            sites: [],
+        }
+    }
+
+    onTilesLoaded = (mapProps, maps)=>{
+        if(this.props.onMapLoaded != null)
+            this.props.onMapLoaded()
+        if(this.props.onBoundsCheckPassed != null){
+            let points = [
+                { lat: maxLat, lng: minLng },
+                { lat: minLat, lng: maxLng },
+            ]
+            let bounds = new this.props.google.maps.LatLngBounds();
+            for (let i = 0; i < points.length; i++) {
+                bounds.extend(points[i]);
+            }
+            if(maps.getBounds().contains(bounds.getNorthEast()) && maps.getBounds().contains(bounds.getSouthWest())){
+                this.props.onBoundsCheckPassed()
+            }
         }
     }
 
@@ -87,6 +118,7 @@ export class MapContainer extends React.Component {
                 for (let entry of data){
                     if (entry.startsWith('USGS')){
                         entry = entry.split('\t')
+                        console.log(entry[3])
                         entry = {
                             id: entry[1],
                             name: entry[2],
@@ -100,6 +132,8 @@ export class MapContainer extends React.Component {
                 this.setState({
                     sites: usgsSites
                 })
+                if(this.props.onSiteDataReceived != null)
+                    this.props.onSiteDataReceived()
             })
             .catch((error) => {
                 alert(error)
@@ -128,6 +162,7 @@ export class MapContainer extends React.Component {
     }
 
     render = () => {
+        console.log(this.state)
         const markers = []
 
         for(let entry of this.state.sites){
@@ -137,50 +172,57 @@ export class MapContainer extends React.Component {
                     title={entry.name}
                     name={entry.name}
                     icon={{
-                        url: red,
-                        scaledSize: new this.props.google.maps.Size(8, 8)
+                        url: markerImages[entry.type.substring(0, 2)],
+                        scaledSize: new this.props.google.maps.Size(5, 5)
                     }}
                     position={{lat: entry.lat, lng: entry.lng}} />
             )
         }
+        
+        if(this.props.onMarkersLoaded != null && markers.length > 0)
+            this.props.onMarkersLoaded()
+
         return (
-            <Map
-                google={this.props.google}
-                zoom={this.state.zoom}
-                minZoom={this.state.zoom}
-                style={mapStyles}
-                containerStyle={containerStyle}
-                initialCenter={
-                    {
-                        lat: 28.0571376,
-                        lng: -83.7662318
+            <div>
+                <Map
+                    google={this.props.google}
+                    zoom={this.state.zoom}
+                    minZoom={this.state.zoom}
+                    style={mapStyles}
+                    containerStyle={containerStyle}
+                    initialCenter={
+                        {
+                            lat: 28.0571376,
+                            lng: -83.7662318
+                        }
                     }
-                }
-                center={this.state.center}
-                mapTypeControl={false}
-                scaleControl={false}
-                streetViewControl={false}
-                fullscreenControl={false}
-                onReady={this.setup}
-                onZoomChanged={this.onZoomChanged}
-                onCenterChanged={this.onDragEnd}
-            >
-                {markers}
-                <Polyline
-                    path={
-                        [
-                            {lat: minLat, lng: minLng},
-                            {lat: maxLat, lng: minLng},
-                            {lat: maxLat, lng: maxLng},
-                            {lat: minLat, lng: maxLng},
-                            {lat: minLat, lng: minLng}
-                        ]
-                    }
-                    strokeColor="#000000"
-                    strokeOpacity={1}
-                    strokeWeight={2}
-                />
-            </Map>
+                    center={this.state.center}
+                    mapTypeControl={false}
+                    scaleControl={false}
+                    streetViewControl={false}
+                    fullscreenControl={false}
+                    onReady={this.setup}
+                    onZoomChanged={this.onZoomChanged}
+                    onCenterChanged={this.onDragEnd}
+                    onTilesloaded={this.state.tiles_loaded ? null : this.onTilesLoaded}
+                >
+                    {markers}
+                    <Polyline
+                        path={
+                            [
+                                {lat: minLat, lng: minLng},
+                                {lat: maxLat, lng: minLng},
+                                {lat: maxLat, lng: maxLng},
+                                {lat: minLat, lng: maxLng},
+                                {lat: minLat, lng: minLng}
+                            ]
+                        }
+                        strokeColor="#000000"
+                        strokeOpacity={1}
+                        strokeWeight={2}
+                    />
+                </Map>
+            </div>
         );
     }
 }
