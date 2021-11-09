@@ -1,5 +1,5 @@
 import React from 'react';
-import { Map, Marker, GoogleApiWrapper, Polyline } from 'google-maps-react';
+import { Map, Marker, GoogleApiWrapper, Polyline, InfoWindow } from 'google-maps-react';
 import red from './red.png'
 import yellow from './yellow.png'
 import blue from './blue.png'
@@ -68,7 +68,7 @@ function getBoundsZoomLevel(bounds, mapDim) {
 }
 
 export class MapContainer extends React.Component {
-    constructor(props){
+    constructor(props) {
         super(props)
 
         let mapHeight = 0.55 * Math.min(window.innerWidth, window.innerHeight)
@@ -83,19 +83,21 @@ export class MapContainer extends React.Component {
         }
 
         this.state = {
-            zoom: getBoundsZoomLevel(bounds, {width: mapWidth, height: mapHeight}),
+            zoom: getBoundsZoomLevel(bounds, { width: mapWidth, height: mapHeight }),
             center: {
                 lat: 28.0571376,
                 lng: -83.7662318
             },
             sites: [],
+            activeMarker: null,
+            activeMarkerProps: null,
         }
     }
 
-    onTilesLoaded = (mapProps, maps)=>{
-        if(this.props.onMapLoaded != null)
+    onTilesLoaded = (mapProps, maps) => {
+        if (this.props.onMapLoaded != null)
             this.props.onMapLoaded()
-        if(this.props.onBoundsCheckPassed != null){
+        if (this.props.onBoundsCheckPassed != null) {
             let points = [
                 { lat: maxLat, lng: minLng },
                 { lat: minLat, lng: maxLng },
@@ -104,21 +106,43 @@ export class MapContainer extends React.Component {
             for (let i = 0; i < points.length; i++) {
                 bounds.extend(points[i]);
             }
-            if(maps.getBounds().contains(bounds.getNorthEast()) && maps.getBounds().contains(bounds.getSouthWest())){
+            if (maps.getBounds().contains(bounds.getNorthEast()) && maps.getBounds().contains(bounds.getSouthWest())) {
                 this.props.onBoundsCheckPassed()
             }
         }
     }
 
-    setup = (mapProps, maps)=>{
+    onMarkerClick = (props, marker, e) => {
+        if(this.state.activeMarker == null || this.state.activeMarkerProps.id != props.id){
+            this.setState({
+                activeMarker: marker,
+                activeMarkerProps: props
+            })
+        }else{
+            this.setState({
+                activeMarker: null,
+                activeMarkerProps: null
+            })
+        }
+    }
+
+    onMapClick = (props) => {
+        if(this.state.activeMarker != null){
+            this.setState({
+                activeMarker: null,
+                activeMarkerProps: null
+            })
+        }
+    }
+
+    setup = (mapProps, maps) => {
         axios.get('https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=fl&parameterCd=00010&siteType=OC,ES,LK,ST,SP&siteStatus=active&hasDataTypeCd=qw')
             .then((response) => {
                 let data = response.data.split('\n')
                 let usgsSites = []
-                for (let entry of data){
-                    if (entry.startsWith('USGS')){
+                for (let entry of data) {
+                    if (entry.startsWith('USGS')) {
                         entry = entry.split('\t')
-                        console.log(entry[3])
                         entry = {
                             id: entry[1],
                             name: entry[2],
@@ -132,7 +156,7 @@ export class MapContainer extends React.Component {
                 this.setState({
                     sites: usgsSites
                 })
-                if(this.props.onSiteDataReceived != null)
+                if (this.props.onSiteDataReceived != null)
                     this.props.onSiteDataReceived()
             })
             .catch((error) => {
@@ -140,46 +164,46 @@ export class MapContainer extends React.Component {
             })
     }
 
-    onZoomChanged = (mapProps, maps)=>{
-        console.log(maps.zoom)
+    onZoomChanged = (mapProps, maps) => {
         // Should only run if necessary
         //this.setState({zoom: maps.zoom, center: maps.center})
     }
 
-    onDragEnd = (mapProps, maps)=>{
+    onDragEnd = (mapProps, maps) => {
         let lat = maps.center.lat()
         let lng = maps.center.lng()
         let latNew = Math.min(maxLat, Math.max(minLat, lat))
         let lngNew = Math.min(maxLng, Math.max(minLng, lng))
-        if(latNew !== lat || lngNew !== lng){
+        if (latNew !== lat || lngNew !== lng) {
             this.setState({
                 center: {
                     lat: latNew,
                     lng: lngNew
                 }
             })
-        }       
+        }
     }
 
     render = () => {
         console.log(this.state)
         const markers = []
 
-        for(let entry of this.state.sites){
+        for (let entry of this.state.sites) {
             markers.push(
                 <Marker
-                    key={entry.id}
+                    id={entry.id}
                     title={entry.name}
                     name={entry.name}
                     icon={{
                         url: markerImages[entry.type.substring(0, 2)],
                         scaledSize: new this.props.google.maps.Size(5, 5)
                     }}
-                    position={{lat: entry.lat, lng: entry.lng}} />
+                    position={{ lat: entry.lat, lng: entry.lng }} 
+                    onClick={this.onMarkerClick}/>
             )
         }
-        
-        if(this.props.onMarkersLoaded != null && markers.length > 0)
+
+        if (this.props.onMarkersLoaded != null && markers.length > 0)
             this.props.onMarkersLoaded()
 
         return (
@@ -205,16 +229,25 @@ export class MapContainer extends React.Component {
                     onZoomChanged={this.onZoomChanged}
                     onCenterChanged={this.onDragEnd}
                     onTilesloaded={this.state.tiles_loaded ? null : this.onTilesLoaded}
+                    onClick={this.onMapClick}
                 >
                     {markers}
+                    <InfoWindow
+                        marker={this.state.activeMarker}
+                        visible={this.state.activeMarker != null}
+                        >
+                            <div style={{color: 'black'}}>
+                                <h1>{(this.state.activeMarker != null) ? this.state.activeMarkerProps.name : ""}</h1>
+                            </div>
+                    </InfoWindow>
                     <Polyline
                         path={
                             [
-                                {lat: minLat, lng: minLng},
-                                {lat: maxLat, lng: minLng},
-                                {lat: maxLat, lng: maxLng},
-                                {lat: minLat, lng: maxLng},
-                                {lat: minLat, lng: minLng}
+                                { lat: minLat, lng: minLng },
+                                { lat: maxLat, lng: minLng },
+                                { lat: maxLat, lng: maxLng },
+                                { lat: minLat, lng: maxLng },
+                                { lat: minLat, lng: minLng }
                             ]
                         }
                         strokeColor="#000000"
