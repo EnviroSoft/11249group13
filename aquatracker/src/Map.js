@@ -1,6 +1,11 @@
 import React from 'react';
-import { Map, Marker, GoogleApiWrapper, Polyline } from 'google-maps-react';
+import { Map, Marker, GoogleApiWrapper, Polyline, InfoWindow } from 'google-maps-react';
 import red from './red.png'
+import yellow from './yellow.png'
+import blue from './blue.png'
+import green from './green.png'
+import lblue from './lblue.png'
+import dgreen from './dgreen.png'
 
 const axios = require('axios')
 
@@ -23,6 +28,14 @@ const containerStyle = {
     borderStyle: 'solid',
     borderWidth: '5px',
     borderColor: 'black',
+}
+
+const markerImages = {
+    'ST': blue,
+    'SP': dgreen,
+    'ES': red,
+    'LK': yellow,
+    'OC': red
 }
 
 // Copied from https://stackoverflow.com/questions/6048975/google-maps-v3-how-to-calculate-the-zoom-level-for-a-given-bounds
@@ -55,7 +68,7 @@ function getBoundsZoomLevel(bounds, mapDim) {
 }
 
 export class MapContainer extends React.Component {
-    constructor(props){
+    constructor(props) {
         super(props)
 
         let mapHeight = 0.55 * Math.min(window.innerWidth, window.innerHeight)
@@ -70,22 +83,96 @@ export class MapContainer extends React.Component {
         }
 
         this.state = {
-            zoom: getBoundsZoomLevel(bounds, {width: mapWidth, height: mapHeight}),
+            zoom: getBoundsZoomLevel(bounds, { width: mapWidth, height: mapHeight }),
             center: {
                 lat: 28.0571376,
                 lng: -83.7662318
             },
-            sites: []
+            sites: [],
+            activeMarker: null,
+            activeMarkerProps: null,
+            activeSiteData: null
         }
     }
 
-    setup = (mapProps, maps)=>{
-        axios.get('https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=fl&parameterCd=00010&siteType=OC,ES,LK,ST,SP&siteStatus=active&hasDataTypeCd=qw')
+    onTilesLoaded = (mapProps, maps) => {
+        if (this.props.onMapLoaded != null)
+            this.props.onMapLoaded()
+        if (this.props.onBoundsCheckPassed != null) {
+            let points = [
+                { lat: maxLat, lng: minLng },
+                { lat: minLat, lng: maxLng },
+            ]
+            let bounds = new this.props.google.maps.LatLngBounds();
+            for (let i = 0; i < points.length; i++) {
+                bounds.extend(points[i]);
+            }
+            if (maps.getBounds().contains(bounds.getNorthEast()) && maps.getBounds().contains(bounds.getSouthWest())) {
+                this.props.onBoundsCheckPassed()
+            }
+        }
+    }
+
+    onMarkerClick = (props, marker, e) => {
+        if(this.state.activeMarker == null || this.state.activeMarkerProps.id != props.id){
+            axios.get('https://waterservices.usgs.gov/nwis/dv/?format=rdb&sites=' + props.id + '&startDT=2015-11-01&endDT=2022-11-09&statCd=00003&parameterCd=00010&siteStatus=all')
+                .then((response)=> {
+                    let data = response.data.split('\n')
+                    let siteData = []
+                    for(let entry of data){
+                        if(entry.startsWith('USGS')){
+                            entry = entry.split('\t')
+                            let temperature = (entry[3].length == 0) ? entry[5] : entry[3]
+                            if(temperature.length == 0){
+                                alert("PROBLEM!")
+                                continue
+                            }
+                            entry = {
+                                date: entry[2],
+                                temperature: entry[3]
+                            }
+                            siteData.push(entry)
+                        }
+                    }
+                    console.log(siteData)
+                    this.setState({
+                        activeSiteData: siteData
+                    })
+                })
+                .catch((error)=>{
+                    alert(error)
+                })
+            this.setState({
+                activeMarker: marker,
+                activeMarkerProps: props,
+                activeSiteData: null
+            })
+        }else{
+            this.setState({
+                activeMarker: null,
+                activeMarkerProps: null,
+                activeSiteData: null
+            })
+        }
+    }
+
+    onMapClick = (props) => {
+        if(this.state.activeMarker != null){
+            this.setState({
+                activeMarker: null,
+                activeMarkerProps: null,
+                activeSiteData: null
+            })
+        }
+    }
+
+    setup = (mapProps, maps) => {
+        axios.get('https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=fl&parameterCd=00010&siteType=OC,ES,LK,ST,SP&siteStatus=active&hasDataTypeCd=dv')
             .then((response) => {
                 let data = response.data.split('\n')
                 let usgsSites = []
-                for (let entry of data){
-                    if (entry.startsWith('USGS')){
+                for (let entry of data) {
+                    if (entry.startsWith('USGS')) {
                         entry = entry.split('\t')
                         entry = {
                             id: entry[1],
@@ -97,90 +184,146 @@ export class MapContainer extends React.Component {
                         usgsSites.push(entry)
                     }
                 }
-                this.setState({
-                    sites: usgsSites
-                })
+                axios.get('https://waterservices.usgs.gov/nwis/dv/?format=rdb&stateCd=fl&startDT=2021-10-09&endDT=2021-11-09&statCd=00003&parameterCd=00010&siteStatus=active')
+                    .then((response) => {
+                        let dData = response.data.split('\n')
+                        let siteIds = new Set()
+                        for(let entry of dData){
+                            if(entry.startsWith('USGS')){
+                                entry = entry.split('\t')
+                                siteIds.add(entry[1])
+                            }
+                        }
+                        let usgsSitesFinal = []
+                        for(let entry of usgsSites){
+                            if(siteIds.has(entry.id))
+                                usgsSitesFinal.push(entry)
+                        }
+                        this.setState({
+                            sites: usgsSitesFinal
+                        })
+                        if (this.props.onSiteDataReceived != null)
+                            this.props.onSiteDataReceived()
+                    }).catch((error) => {
+                        alert(error)
+                    })
             })
             .catch((error) => {
                 alert(error)
             })
     }
 
-    onZoomChanged = (mapProps, maps)=>{
-        console.log(maps.zoom)
+    onZoomChanged = (mapProps, maps) => {
         // Should only run if necessary
         //this.setState({zoom: maps.zoom, center: maps.center})
     }
 
-    onDragEnd = (mapProps, maps)=>{
+    onDragEnd = (mapProps, maps) => {
         let lat = maps.center.lat()
         let lng = maps.center.lng()
         let latNew = Math.min(maxLat, Math.max(minLat, lat))
         let lngNew = Math.min(maxLng, Math.max(minLng, lng))
-        if(latNew !== lat || lngNew !== lng){
+        if (latNew !== lat || lngNew !== lng) {
             this.setState({
                 center: {
                     lat: latNew,
                     lng: lngNew
                 }
             })
-        }       
+        }
     }
 
     render = () => {
+        console.log(this.state)
         const markers = []
 
-        for(let entry of this.state.sites){
+        for (let entry of this.state.sites) {
             markers.push(
                 <Marker
-                    key={entry.id}
+                    id={entry.id}
                     title={entry.name}
                     name={entry.name}
                     icon={{
-                        url: red,
-                        scaledSize: new this.props.google.maps.Size(8, 8)
+                        url: markerImages[entry.type.substring(0, 2)],
+                        scaledSize: new this.props.google.maps.Size(5, 5)
                     }}
-                    position={{lat: entry.lat, lng: entry.lng}} />
+                    position={{ lat: entry.lat, lng: entry.lng }} 
+                    onClick={this.onMarkerClick}/>
             )
         }
-        return (
-            <Map
-                google={this.props.google}
-                zoom={this.state.zoom}
-                minZoom={this.state.zoom}
-                style={mapStyles}
-                containerStyle={containerStyle}
-                initialCenter={
-                    {
-                        lat: 28.0571376,
-                        lng: -83.7662318
-                    }
+
+        if (this.props.onMarkersLoaded != null && markers.length > 0)
+            this.props.onMarkersLoaded()
+        
+        const infoWindowContent = []
+
+        if(this.state.activeMarker != null){
+            infoWindowContent.push(
+                <h1>{this.state.activeMarkerProps.name}</h1>
+            )
+            if(this.state.activeSiteData != null){
+                if(this.state.activeSiteData.length == 0){
+                    infoWindowContent.push(
+                        <h3>No available temperature data</h3>
+                    )
+                }else{
+                    infoWindowContent.push(
+                        <p><b>Average Temperature on {this.state.activeSiteData[this.state.activeSiteData.length - 1].date}:    </b>{this.state.activeSiteData[this.state.activeSiteData.length - 1].temperature}°C</p>
+                    )
                 }
-                center={this.state.center}
-                mapTypeControl={false}
-                scaleControl={false}
-                streetViewControl={false}
-                fullscreenControl={false}
-                onReady={this.setup}
-                onZoomChanged={this.onZoomChanged}
-                onCenterChanged={this.onDragEnd}
-            >
-                {markers}
-                <Polyline
-                    path={
-                        [
-                            {lat: minLat, lng: minLng},
-                            {lat: maxLat, lng: minLng},
-                            {lat: maxLat, lng: maxLng},
-                            {lat: minLat, lng: maxLng},
-                            {lat: minLat, lng: minLng}
-                        ]
+            }
+        }
+
+        return (
+            <div>
+                <Map
+                    google={this.props.google}
+                    zoom={this.state.zoom}
+                    minZoom={this.state.zoom}
+                    style={mapStyles}
+                    containerStyle={containerStyle}
+                    initialCenter={
+                        {
+                            lat: 28.0571376,
+                            lng: -83.7662318
+                        }
                     }
-                    strokeColor="#000000"
-                    strokeOpacity={1}
-                    strokeWeight={2}
-                />
-            </Map>
+                    center={this.state.center}
+                    mapTypeControl={false}
+                    scaleControl={false}
+                    streetViewControl={false}
+                    fullscreenControl={false}
+                    onReady={this.setup}
+                    onZoomChanged={this.onZoomChanged}
+                    onCenterChanged={this.onDragEnd}
+                    onTilesloaded={this.state.tiles_loaded ? null : this.onTilesLoaded}
+                    onClick={this.onMapClick}
+                >
+                    {markers}
+                    <InfoWindow
+                        marker={this.state.activeMarker}
+                        visible={this.state.activeMarker != null}
+                        >
+                            <div style={{color: 'black'}}>
+                                {infoWindowContent}
+                            </div>
+                    </InfoWindow>
+                    <Polyline
+                        path={
+                            [
+                                { lat: minLat, lng: minLng },
+                                { lat: maxLat, lng: minLng },
+                                { lat: maxLat, lng: maxLng },
+                                { lat: minLat, lng: maxLng },
+                                { lat: minLat, lng: minLng }
+                            ]
+                        }
+                        strokeColor="#000000"
+                        strokeOpacity={1}
+                        strokeWeight={2}
+                    />
+                </Map>
+            </div>
         );
     }
 }
