@@ -7,24 +7,9 @@ class App extends React.Component {
     return (
       <div className="App">
         <div className="App-body">
-        <header>
-            <h1>AquaTracker</h1>
-        </header>
-        <nav id="nav_menu">
-            <ul>
-                <li> <a href="" class="current">Home</a>
-                </li>
-                <li> <a href="">Settings</a>
-                </li>
-                <li> <a href="">Help</a>
-                </li>
-                <li> <a href="">Login</a>
-                </li>
-            </ul>
-        </nav>
-        <h2>
-            Water Quality Data Locations
-          </h2>
+          <h1>
+            AquaTracker
+          </h1>
           <GMap/>
         </div>
       </div>

@@ -3,7 +3,7 @@
 }
 
 .App-body {
-  background-color: blue;
+  background-color: #282c34;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -14,59 +14,4 @@
 
 .Map {
   align-items: flex-start;
-}
-
-/*Character Styles*/
-h1, h2, h3, p {
-    margin: 0;
-    padding: 0;
-}
-
-/*Header Style*/
-header {
-    background-image: -webkit-linear-gradient(to bottom, white 0%, blue 100%);
-    background-image: -moz-linear-gradient(to bottom, white 0%, blue 100%);
-    background-image: -o-linear-gradient(to bottom, white 0%, blue 100%);
-    background-image: linear-gradient(to bottom, white 0%, blue 100%);
-    padding: 15px 1.8844%;
-    border-bottom: 2px solid red;
-}
-
-/*Style for main navigation menu bar*/
-#nav_menu ul {
-    display: flex;
-    flex-basis: 100%;
-    justify-content: space-between;
-    list-style-type: none;
-    margin: 0;
-    margin-bottom: 1em;
-    padding: 0;
-    position: relative;
-}
-
-/*Provides spacing between list items*/
-#nav_menu ul li {
-    flex-basis: 25%;
-}
-
-/*Style anchor items in list for nav bar*/
-#nav_menu ul li a {
-    display: block;
-    text-align: center;
-    padding: .5em 0;
-    text-decoration: none;
-    background-color: black;
-    color: white;
-    font-weight: bold;
-    border-bottom: 2px solid red;
-}
-
-/*Style (set color) of current page*/
-#nav_menu a.current {
-    color: red;
-}
-
-/*Style (change color) when mouse hovers over menu item*/
-#nav_menu ul li a:hover, #nav_menu ul li a:focus {
-    color: red;
 }
