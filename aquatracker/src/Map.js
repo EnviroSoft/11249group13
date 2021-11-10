@@ -91,6 +91,7 @@ export class MapContainer extends React.Component {
             sites: [],
             activeMarker: null,
             activeMarkerProps: null,
+            activeSiteData: null
         }
     }
 
@@ -114,14 +115,43 @@ export class MapContainer extends React.Component {
 
     onMarkerClick = (props, marker, e) => {
         if(this.state.activeMarker == null || this.state.activeMarkerProps.id != props.id){
+            axios.get('https://waterservices.usgs.gov/nwis/dv/?format=rdb&sites=' + props.id + '&startDT=2015-11-01&endDT=2022-11-09&statCd=00003&parameterCd=00010&siteStatus=all')
+                .then((response)=> {
+                    let data = response.data.split('\n')
+                    let siteData = []
+                    for(let entry of data){
+                        if(entry.startsWith('USGS')){
+                            entry = entry.split('\t')
+                            let temperature = (entry[3].length == 0) ? entry[5] : entry[3]
+                            if(temperature.length == 0){
+                                alert("PROBLEM!")
+                                continue
+                            }
+                            entry = {
+                                date: entry[2],
+                                temperature: entry[3]
+                            }
+                            siteData.push(entry)
+                        }
+                    }
+                    console.log(siteData)
+                    this.setState({
+                        activeSiteData: siteData
+                    })
+                })
+                .catch((error)=>{
+                    alert(error)
+                })
             this.setState({
                 activeMarker: marker,
-                activeMarkerProps: props
+                activeMarkerProps: props,
+                activeSiteData: null
             })
         }else{
             this.setState({
                 activeMarker: null,
-                activeMarkerProps: null
+                activeMarkerProps: null,
+                activeSiteData: null
             })
         }
     }
@@ -130,13 +160,14 @@ export class MapContainer extends React.Component {
         if(this.state.activeMarker != null){
             this.setState({
                 activeMarker: null,
-                activeMarkerProps: null
+                activeMarkerProps: null,
+                activeSiteData: null
             })
         }
     }
 
     setup = (mapProps, maps) => {
-        axios.get('https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=fl&parameterCd=00010&siteType=OC,ES,LK,ST,SP&siteStatus=active&hasDataTypeCd=qw')
+        axios.get('https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=fl&parameterCd=00010&siteType=OC,ES,LK,ST,SP&siteStatus=active&hasDataTypeCd=dv')
             .then((response) => {
                 let data = response.data.split('\n')
                 let usgsSites = []
@@ -153,11 +184,29 @@ export class MapContainer extends React.Component {
                         usgsSites.push(entry)
                     }
                 }
-                this.setState({
-                    sites: usgsSites
-                })
-                if (this.props.onSiteDataReceived != null)
-                    this.props.onSiteDataReceived()
+                axios.get('https://waterservices.usgs.gov/nwis/dv/?format=rdb&stateCd=fl&startDT=2021-10-09&endDT=2021-11-09&statCd=00003&parameterCd=00010&siteStatus=active')
+                    .then((response) => {
+                        let dData = response.data.split('\n')
+                        let siteIds = new Set()
+                        for(let entry of dData){
+                            if(entry.startsWith('USGS')){
+                                entry = entry.split('\t')
+                                siteIds.add(entry[1])
+                            }
+                        }
+                        let usgsSitesFinal = []
+                        for(let entry of usgsSites){
+                            if(siteIds.has(entry.id))
+                                usgsSitesFinal.push(entry)
+                        }
+                        this.setState({
+                            sites: usgsSitesFinal
+                        })
+                        if (this.props.onSiteDataReceived != null)
+                            this.props.onSiteDataReceived()
+                    }).catch((error) => {
+                        alert(error)
+                    })
             })
             .catch((error) => {
                 alert(error)
@@ -205,6 +254,25 @@ export class MapContainer extends React.Component {
 
         if (this.props.onMarkersLoaded != null && markers.length > 0)
             this.props.onMarkersLoaded()
+        
+        const infoWindowContent = []
+
+        if(this.state.activeMarker != null){
+            infoWindowContent.push(
+                <h1>{this.state.activeMarkerProps.name}</h1>
+            )
+            if(this.state.activeSiteData != null){
+                if(this.state.activeSiteData.length == 0){
+                    infoWindowContent.push(
+                        <h3>No available temperature data</h3>
+                    )
+                }else{
+                    infoWindowContent.push(
+                        <p><b>Average Temperature on {this.state.activeSiteData[this.state.activeSiteData.length - 1].date}:    </b>{this.state.activeSiteData[this.state.activeSiteData.length - 1].temperature}°C</p>
+                    )
+                }
+            }
+        }
 
         return (
             <div>
@@ -237,7 +305,7 @@ export class MapContainer extends React.Component {
                         visible={this.state.activeMarker != null}
                         >
                             <div style={{color: 'black'}}>
-                                <h1>{(this.state.activeMarker != null) ? this.state.activeMarkerProps.name : ""}</h1>
+                                {infoWindowContent}
                             </div>
                     </InfoWindow>
                     <Polyline
