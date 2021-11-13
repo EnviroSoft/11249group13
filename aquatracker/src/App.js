@@ -43,9 +43,24 @@ class App extends React.Component {
     return (
       <div className="App">
         <div className="App-body">
-          <h1>
-            AquaTracker
-          </h1>
+        <header>
+            <h1>AquaTracker</h1>
+        </header>
+        <nav id="nav_menu">
+            <ul>
+                <li> <a href="" class="current">Home</a>
+                </li>
+                <li> <a href="">Settings</a>
+                </li>
+                <li> <a href="">Help</a>
+                </li>
+                <li> <a href="">Login</a>
+                </li>
+            </ul>
+        </nav>
+        <h2>
+            Water Quality Data Locations
+        </h2>
           <GMap
             onMapLoaded={(this.testing && !this.state.tests[MAP_LOADED]) ? ()=>{
               this.passTest(MAP_LOADED)
