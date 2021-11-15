@@ -6,6 +6,7 @@ import blue from './blue.png'
 import green from './green.png'
 import lblue from './lblue.png'
 import dgreen from './dgreen.png'
+import { VictoryChart, VictoryLine, VictoryTheme, VictoryLabel, VictoryAxis } from "victory";
 
 const axios = require('axios')
 
@@ -23,8 +24,8 @@ const mapStyles = {
 const containerStyle = {
     position: 'relative',
     margin: 'auto',
-    width: '70vmin',
-    height: '55vmin',
+    width: '100vmin',
+    height: '75vmin',
     borderStyle: 'solid',
     borderWidth: '5px',
     borderColor: 'black',
@@ -122,19 +123,20 @@ export class MapContainer extends React.Component {
                     for(let entry of data){
                         if(entry.startsWith('USGS')){
                             entry = entry.split('\t')
-                            let temperature = (entry[3].length == 0) ? entry[5] : entry[3]
+                            let temperature = parseFloat((entry[3].length == 0) ? (entry[5].length == 0 ? entry[7] : entry[5]) : entry[3])
                             if(temperature.length == 0){
                                 alert("PROBLEM!")
                                 continue
                             }
-                            entry = {
-                                date: entry[2],
-                                temperature: entry[3]
+                            if(!isNaN(temperature)){
+                                entry = {
+                                    date: entry[2],
+                                    temperature: temperature
+                                }
+                                siteData.push(entry)
                             }
-                            siteData.push(entry)
                         }
                     }
-                    console.log(siteData)
                     this.setState({
                         activeSiteData: siteData
                     })
@@ -270,6 +272,31 @@ export class MapContainer extends React.Component {
                     infoWindowContent.push(
                         <p><b>Average Temperature on {this.state.activeSiteData[this.state.activeSiteData.length - 1].date}:    </b>{this.state.activeSiteData[this.state.activeSiteData.length - 1].temperature}°C</p>
                     )
+                    let data = []
+                    for(let entry of this.state.activeSiteData){
+                        data.push({x: new Date(entry.date), y: entry.temperature})
+                    }
+                    console.log(this.state.activeSiteData)
+                    console.log(data)
+                    infoWindowContent.push(
+                        <h3>Average Daily Temperature (°C)</h3>
+                    )
+                    infoWindowContent.push(
+                        <div style={{width: '50%', height: '20vh', margin:'auto'}}>
+                            <VictoryChart
+                            theme={VictoryTheme.material}
+                            padding={{ top: 0, bottom: 50, right: 0, left: 0 }}
+                            >
+                            <VictoryLine
+                                style={{
+                                data: { stroke: "#c43a31" },
+                                parent: { border: "1px solid #ccc"}
+                                }}
+                                data={data}
+                            />
+                            </VictoryChart>
+                        </div>
+                    )
                 }
             }
         }
@@ -304,7 +331,7 @@ export class MapContainer extends React.Component {
                         marker={this.state.activeMarker}
                         visible={this.state.activeMarker != null}
                         >
-                            <div style={{color: 'black'}}>
+                            <div style={{color: 'black', height:'30vh'}}>
                                 {infoWindowContent}
                             </div>
                     </InfoWindow>
