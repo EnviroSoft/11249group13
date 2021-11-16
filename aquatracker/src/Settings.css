@@ -1,5 +1,6 @@
 
 .border {
+  background-color: black;
   border: 15px solid rgb(19, 172, 138);
   padding: 50px;
   /* margin: 20px; */
