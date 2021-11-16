@@ -3,7 +3,7 @@
 }
 
 .App-body {
-  background-color: darkred;
+  background-color: rgb(14, 18, 34);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -24,12 +24,12 @@ h1, h2, h3, p {
 
 /*Header Style*/
 header {
-    background-image: -webkit-linear-gradient(to bottom, white 0%, darkred 100%);
-    background-image: -moz-linear-gradient(to bottom, white 0%, darkred 100%);
-    background-image: -o-linear-gradient(to bottom, white 0%, darkred 100%);
-    background-image: linear-gradient(to bottom, white 0%, darkred 100%);
+    background-image: rgb(22, 28, 49) 100%;
+    /* background-image: -moz-linear-gradient(to bottom, white 0%, rgb(22, 28, 49) 100%);
+    background-image: -o-linear-gradient(to bottom, white 0%, rgb(22, 28, 49) 100%);
+    background-image: linear-gradient(to bottom, white 0%, rgb(22, 28, 49) 100%); */
     padding: 15px 1.8844%;
-    border-bottom: 2px solid red;
+    border-bottom: 2px solid rgb(19, 172, 138);
 }
 
 /*Style for main navigation menu bar*/
@@ -58,15 +58,15 @@ header {
     background-color: black;
     color: white;
     font-weight: bold;
-    border-bottom: 2px solid red;
+    border-bottom: 2px solid rgb(19, 172, 138);
 }
 
 /*Style (set color) of current page*/
 #nav_menu a.current {
-    color: red;
+    color: rgb(19, 172, 138);
 }
 
 /*Style (change color) when mouse hovers over menu item*/
 #nav_menu ul li a:hover, #nav_menu ul li a:focus {
-    color: red;
+    color: rgb(19, 172, 138);
 }

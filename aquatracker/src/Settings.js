@@ -13,7 +13,36 @@ export class Settings extends React.Component {
     render = () => {
         return (
             <div>
-                <h2>Settings Page</h2>
+                <h2>Settings</h2>
+                <br></br>
+
+                <div class="border">
+                    <div class="sliderWrapper">
+                        <div>Temperature&nbsp;&nbsp;</div>
+                        <label class="switch">
+                            <input type="checkbox"/>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <br></br>
+                    <div class="sliderWrapper">
+                        <div>pH Levels&nbsp;&nbsp;</div>
+                        <label class="switch">
+                            <input type="checkbox"/>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <br></br>
+                    <div class="sliderWrapper">
+                        <div>Maps&nbsp;&nbsp;</div>
+                        <label class="switch">
+                            <input type="checkbox"/>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
             </div>
         );
     }
