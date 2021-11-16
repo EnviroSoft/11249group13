@@ -20,7 +20,7 @@ export class Settings extends React.Component {
                     <div class="sliderWrapper">
                         <div>Temperature&nbsp;&nbsp;</div>
                         <label class="switch">
-                            <input type="checkbox" checked/>
+                            <input type="checkbox"/>
                             <span class="slider round"></span>
                         </label>
                     </div>
@@ -38,7 +38,7 @@ export class Settings extends React.Component {
                     <div class="sliderWrapper">
                         <div>Graphs&nbsp;&nbsp;</div>
                         <label class="switch">
-                            <input type="checkbox" checked/>
+                            <input type="checkbox"/>
                             <span class="slider round"></span>
                         </label>
                     </div>
