@@ -19,6 +19,7 @@ export class Login extends React.Component {
                     <h1>Welcome Back</h1>
                     <p>Please enter your email and password to sign in.</p>
                     <hr></hr>
+                    <br></br>
 
                     <label for="email"><b>Email</b></label>
                     <input type="text" placeholder="Enter Email" name="email" id="email" required/>
