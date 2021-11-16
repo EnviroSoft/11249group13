@@ -36,7 +36,7 @@ export class Settings extends React.Component {
 
                     <br></br>
                     <div class="sliderWrapper">
-                        <div>Maps&nbsp;&nbsp;</div>
+                        <div>Graphs&nbsp;&nbsp;</div>
                         <label class="switch">
                             <input type="checkbox"/>
                             <span class="slider round"></span>
