@@ -13,7 +13,9 @@ export class Help extends React.Component {
     render = () => {
         return (
             <div>
-                <h2>Help Page</h2>
+                <h2>Help</h2>
+                <br></br>
+                <p> For issues with AquaTracker please email us at <b>help@AquaTracker.org</b>  or give us a call at <b>1-800-AQUATRACKER</b>.</p>
             </div>
         );
     }
